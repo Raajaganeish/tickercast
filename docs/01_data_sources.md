@@ -32,7 +32,7 @@ Everything is free and downloaded by scripts. Nothing is typed by hand.
 | DGS10 | `yield_10y` | Daily | Available next business day |
 | DGS2 | `yield_2y` | Daily | Available next business day |
 | T10Y2Y | `curve_10y2y` | Daily | Available next business day |
-| BAMLH0A0HYM2 | `hy_spread` | Daily | Available next business day |
+| BAA10Y | `credit_spread` | Daily | Available next business day |
 | DFF | `fed_funds` | Daily | Available next business day |
 | CPIAUCSL | `cpi_yoy` | Monthly | **First-release date** from ALFRED |
 | UNRATE | `unemployment` | Monthly | **First-release date** from ALFRED |

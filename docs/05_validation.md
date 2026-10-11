@@ -62,12 +62,12 @@ Code: [dataset/prepare.py](../src/tickercast/dataset/prepare.py)
 | No NaN / inf in model inputs | Values that would crash training |
 | Training windows per split | Enough 128-day samples in each split |
 
-## Latest results (full run, 499 stocks, no FRED key)
+## Latest results (full run, 499 stocks, with FRED macro)
 
 | Report | Pass | Warn | Fail |
 |---|---|---|---|
-| 01 Raw | 18 | 4 | 0 |
-| 02 Features | 8 | 2 | 0 |
+| 01 Raw | 20 | 3 | 0 |
+| 02 Features | 7 | 3 | 0 |
 | 03 Dataset | 5 | 0 | 0 |
 
 Remaining warnings, all understood:
@@ -75,11 +75,14 @@ Remaining warnings, all understood:
 - **1 stale-price run** after cleaning: negligible.
 - **2 VIX quotes on US holidays** (Memorial Day and Labor Day 2026): dropped in the feature step.
 - **`gap` has 0.11% extreme values**: real overnight jumps (earnings, news). Clipped to ±5 std.
-- **No macro data**: add a FRED key to `.env`.
+- **Macro levels drift** (`yield_10y`, `fed_funds`, `cpi_yoy`, …): rates and inflation in 2022+ are far above the 2005–2019 average, so the test set sits outside the range the model trained on. Expected. Phase 2 will compare models with and without raw levels (the `_chg_20d` / `_chg_3m` versions are more stable).
+- **`unemployment_chg_3m` extreme values**: the COVID jobs shock in 2020 (+10 points in 3 months). Clipped to ±5 std.
+- **`unemployment_chg_3m` missing for 3 weeks in Feb 2026**: the October 2025 jobs report was never published (US government shutdown), so there is no 3-month-earlier value to compare against.
 
 ## Bugs these checks already caught
 
 | Found by | Problem | Fix |
 |---|---|---|
 | Stale-price check | 527 runs of identical prices, mostly SW / FERG / AMCR OTC history | Illiquid-history trim ([02_universe.md](02_universe.md)) |
+| FRED coverage | ICE high-yield spread (`BAMLH0A0HYM2`) returned only ~3 years of history (FRED licensing limit) | Replaced with Moody's Baa spread (`BAA10Y`), daily since 1986 |
 | Missing values by split | SPY/QQQ/… returns missing on 2 days in the test period; `beta_spy` missing for 60 days after each | Yahoo had VIX quotes on US holidays → phantom dates. Market data is now restricted to days SPY traded |

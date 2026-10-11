@@ -16,7 +16,7 @@ model, test it honestly, and measure whether it beats simple baselines.
 | 3 | PatchTST training (~5M params, 45–60 min on M-series Mac) | Planned |
 | 4 | Extra data: fundamentals (SEC EDGAR), company events (8-K), news sentiment (FinBERT) | Planned |
 
-Current dataset: **2.36M rows** (499 stocks × ~20 years) · **53 features** · **0 failed validation checks**.
+Current dataset: **2.36M rows** (499 stocks × ~20 years) · **66 features** (incl. FRED macro) · **0 failed validation checks**.
 
 ## How it works
 
@@ -69,7 +69,7 @@ from torch.utils.data import DataLoader
 from tickercast.dataset.windows import WindowDataset
 
 train = WindowDataset("data/processed", split="train")       # target: label_up_1d
-x, y, ticker_id, sector_id = train[0]                        # x: (128, 53)
+x, y, ticker_id, sector_id = train[0]                        # x: (128, 66)
 loader = DataLoader(train, batch_size=512, shuffle=True)     # shuffling windows is fine;
                                                              # the split itself is by time
 ```

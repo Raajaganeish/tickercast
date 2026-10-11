@@ -47,7 +47,7 @@ same way later.
 The model sees the **last 128 trading days** (~6 months) of one stock:
 
 ```
-x : (128, 53)   ← 128 days × 53 features, oldest first
+x : (128, 66)   ← 128 days × 66 features, oldest first
 y : 0 or 1      ← label on the LAST day of the window (did day t+1 close higher?)
 ticker_id, sector_id : integers
 ```
@@ -70,10 +70,10 @@ demand, so it doesn't store 1.5M copies of overlapping windows.
 ## 4. How PatchTST will read a window (Phase 3)
 
 ```
-x: 128 days × 53 features
+x: 128 days × 66 features
         │  cut into 16 patches of 8 days
         ▼
-16 patches × (8 × 53 values)
+16 patches × (8 × 66 values)
         │  linear layer → 256-dim vector per patch
         │  + positional encoding (which patch is which)
         │  + ticker embedding + sector embedding

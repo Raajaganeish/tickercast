@@ -10,8 +10,9 @@ import pandas as pd
 
 
 def _asof(dates: pd.DatetimeIndex, s: pd.DataFrame) -> pd.Series:
-    s = s.sort_values("available_date")
-    left = pd.DataFrame({"date": dates})
+    # merge_asof needs identical datetime resolution on both sides (parquet may load ms vs us).
+    s = s.assign(available_date=s["available_date"].astype("datetime64[ns]")).sort_values("available_date")
+    left = pd.DataFrame({"date": dates.astype("datetime64[ns]")})
     merged = pd.merge_asof(left, s[["available_date", "value"]], left_on="date", right_on="available_date")
     return pd.Series(merged["value"].to_numpy(), index=dates)
 

@@ -85,7 +85,7 @@ predict a shock, but the model can see the market's state while it's happening.
 |---|---|
 | `yield_10y`, `yield_2y`, `fed_funds` (+ `_chg_20d`) | Interest rates and their 1-month change |
 | `curve_10y2y` (+ `_chg_20d`) | Yield curve; negative has historically preceded recessions |
-| `hy_spread` (+ `_chg_20d`) | Extra yield on risky bonds = credit stress |
+| `credit_spread` (+ `_chg_20d`) | Extra yield on Baa-rated corporate bonds vs Treasuries = credit stress |
 | `cpi_yoy` | Inflation, year over year, as first published |
 | `unemployment`, `unemployment_chg_3m` | Jobs market |
 

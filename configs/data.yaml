@@ -35,7 +35,7 @@ macro:
     DGS10:  {name: yield_10y,  kind: daily}
     DGS2:   {name: yield_2y,   kind: daily}
     T10Y2Y: {name: curve_10y2y, kind: daily}
-    BAMLH0A0HYM2: {name: hy_spread, kind: daily}
+    BAA10Y: {name: credit_spread, kind: daily}   # Moody's Baa corporate yield minus 10y Treasury (ICE high-yield series on FRED is limited to ~3 years)
     DFF:    {name: fed_funds,  kind: daily}
     CPIAUCSL: {name: cpi,      kind: release}
     UNRATE: {name: unemployment, kind: release}

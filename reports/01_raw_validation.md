@@ -1,10 +1,10 @@
 # Raw data validation
 
-_Generated 2026-10-11 14:02_
+_Generated 2026-10-11 14:13_
 
 Checks on downloaded data before features are built. See docs/05_validation.md for what each check means.
 
-**Summary:** 18 passed · 4 warnings · 0 failed · 4 info
+**Summary:** 20 passed · 3 warnings · 0 failed · 5 info
 
 | Check | Status | Result |
 |---|---|---|
@@ -33,7 +33,9 @@ Checks on downloaded data before features are built. See docs/05_validation.md f
 | Market: non-positive prices | ✅ PASS | 0 rows with price <= 0 |
 | Market: OHLC consistency (low <= open,close <= high) | ✅ PASS | 0 inconsistent rows (0.000%) |
 | Market: volume | ✅ PASS | 0 negative, 0.00% zero-volume days |
-| Macro: data present | ⚠️ WARN | no macro.parquet (FRED_API_KEY not set). Macro features will be absent. |
+| Macro: available_date >= observation date | ✅ PASS | 0 values available before the period they describe |
+| Macro: publication lags | ℹ️ INFO | days between the period a value describes and when it became public |
+| Macro: series are up to date | ✅ PASS | 0 series older than 75 days: none |
 
 ## Sector mix
 
@@ -162,4 +164,17 @@ Checks on downloaded data before features are built. See docs/05_validation.md f
 |  6 | UUP      | 2007-03-01 00:00:00 | 2026-10-09 00:00:00 |    4935 |
 |  7 | XLK      | 2005-01-03 00:00:00 | 2026-10-09 00:00:00 |    5477 |
 |  8 | ^VIX     | 2005-01-03 00:00:00 | 2026-10-09 00:00:00 |    5479 |
+
+
+## Macro: publication lags
+
+|    | series   | name          |   obs | first      | last       |   median_lag_days |   max_lag_days |
+|---:|:---------|:--------------|------:|:-----------|:-----------|------------------:|---------------:|
+|  0 | BAA10Y   | credit_spread |  5442 | 2005-01-03 | 2026-10-08 |                 1 |              3 |
+|  1 | CPIAUCSL | cpi           |   271 | 2004-01-01 | 2026-08-01 |                44 |             59 |
+|  2 | DFF      | fed_funds     |  7951 | 2005-01-01 | 2026-10-08 |                 1 |              3 |
+|  3 | DGS10    | yield_10y     |  5447 | 2005-01-03 | 2026-10-08 |                 1 |              3 |
+|  4 | DGS2     | yield_2y      |  5447 | 2005-01-03 | 2026-10-08 |                 1 |              3 |
+|  5 | T10Y2Y   | curve_10y2y   |  5448 | 2005-01-03 | 2026-10-09 |                 1 |              3 |
+|  6 | UNRATE   | unemployment  |   272 | 2004-01-01 | 2026-09-01 |                34 |             80 |
 

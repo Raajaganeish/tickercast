@@ -1,6 +1,6 @@
 # Model-ready dataset validation
 
-_Generated 2026-10-11 14:02_
+_Generated 2026-10-11 14:14_
 
 Checks on data/processed/dataset.parquet.
 
@@ -10,7 +10,7 @@ Checks on data/processed/dataset.parquet.
 |---|---|---|
 | Splits are in time order, no overlap | ✅ PASS | train < val < test |
 | Embargo: targets never reach into the next split | ✅ PASS | longest target = 5 days, embargo = 5 days; violations: none |
-| Scaler fitted on train only | ✅ PASS | train features: max |mean| = 0.013 (≈0), max |std - 1| = 0.147 (≈0, clipping shrinks it slightly) |
+| Scaler fitted on train only | ✅ PASS | train features: max |mean| = 0.018 (≈0), max |std - 1| = 0.147 (≈0, clipping shrinks it slightly) |
 | No NaN / inf in model inputs | ✅ PASS | 0 non-finite values |
 | Training windows per split | ✅ PASS | 128-day windows: train=1,461,974, val=238,444, test=588,876 |
 

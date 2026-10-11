@@ -1,14 +1,14 @@
 # Feature validation
 
-_Generated 2026-10-11 14:02_
+_Generated 2026-10-11 14:14_
 
 Checks on data/interim/features.parquet. See docs/05_validation.md for what each check means.
 
-**Summary:** 8 passed · 2 warnings · 0 failed · 2 info
+**Summary:** 7 passed · 3 warnings · 0 failed · 2 info
 
 | Check | Status | Result |
 |---|---|---|
-| Shape | ℹ️ INFO | 2,357,926 rows · 53 features · 499 tickers · 2005-10-18 -> 2026-10-09 |
+| Shape | ℹ️ INFO | 2,357,926 rows · 66 features · 499 tickers · 2005-10-18 -> 2026-10-09 |
 | Unique (ticker, date) | ✅ PASS | 0 duplicates |
 | No infinite values | ✅ PASS | 0 inf values |
 | No constant features | ✅ PASS | 0 constant: [] |
@@ -18,17 +18,18 @@ Checks on data/interim/features.parquet. See docs/05_validation.md for what each
 | Label balance (share of 1s) | ℹ️ INFO | close to 0.5 is good; 'always up' accuracy in each split = label_up share |
 | Leakage scan: feature vs next-day return correlation | ✅ PASS | max |daily rank IC| = 0.017. Real signals in daily stock data are ~0.01-0.05; > 0.2 almost always means the feature sees the future |
 | Point-in-time test (truncation) | ✅ PASS | features rebuilt with data cut at 2012-06-29, 2020-03-16 on 40 tickers: 0 differing values |
-| Distribution drift vs train | ✅ PASS | 0 features whose val/test mean moved > 1 train std (expected for rates/inflation; a reason to prefer changes and ranks over raw levels) |
-| Extreme values (> 10 train std) | ⚠️ WARN | worst feature: gap (0.111% of rows). Clipped to ±5 std after scaling |
+| Distribution drift vs train | ⚠️ WARN | 7 features whose val/test mean moved > 1 train std (expected for rates/inflation; a reason to prefer changes and ranks over raw levels) |
+| Extreme values (> 10 train std) | ⚠️ WARN | worst feature: unemployment_chg_3m (2.070% of rows). Clipped to ±5 std after scaling |
 
 ## Missing values per feature
 
-|            |   train |   val |   test |   overall |
-|:-----------|--------:|------:|-------:|----------:|
-| usd_ret_5d | 0.08549 |     0 |      0 |   0.05518 |
-| usd_ret_1d | 0.08449 |     0 |      0 |   0.05453 |
-| oil_ret_5d | 0.03015 |     0 |      0 |   0.01945 |
-| oil_ret_1d | 0.02917 |     0 |      0 |   0.01883 |
+|                     |   train |   val |   test |   overall |
+|:--------------------|--------:|------:|-------:|----------:|
+| usd_ret_5d          | 0.08549 |     0 | 0      |  0.05518  |
+| usd_ret_1d          | 0.08449 |     0 | 0      |  0.05453  |
+| oil_ret_5d          | 0.03015 |     0 | 0      |  0.01945  |
+| oil_ret_1d          | 0.02917 |     0 | 0      |  0.01883  |
+| unemployment_chg_3m | 0       |     0 | 0.0135 |  0.003386 |
 
 
 ## Label balance (share of 1s)
@@ -71,37 +72,37 @@ Checks on data/interim/features.parquet. See docs/05_validation.md for what each
 
 ## Distribution drift vs train
 
-|                  |   val_shift_in_std |   test_shift_in_std |
-|:-----------------|-------------------:|--------------------:|
-| vix_log          |           0.7937   |            0.1984   |
-| vol_60d          |           0.4793   |            0.1782   |
-| vol_20d          |           0.4053   |            0.1604   |
-| spy_vol_20d      |           0.3837   |            0.04779  |
-| beta_spy         |          -0.07483  |           -0.3474   |
-| hl_range         |           0.2709   |            0.08705  |
-| ma_dist_200      |           0.2301   |           -0.06558  |
-| drawdown_252     |          -0.04264  |           -0.2229   |
-| tlt_ret_5d       |          -0.002944 |           -0.1725   |
-| spy_drawdown_252 |           0.1564   |            0.02174  |
-| tech_ret_5d      |           0.1508   |            0.04371  |
-| semis_ret_5d     |           0.1418   |            0.07024  |
-| oil_ret_5d       |          -0.09351  |            0.1413   |
-| qqq_ret_5d       |           0.1323   |            0.005467 |
-| ret_60d          |           0.127    |           -0.04422  |
+|                     |   val_shift_in_std |   test_shift_in_std |
+|:--------------------|-------------------:|--------------------:|
+| cpi_yoy             |            0.5385  |             1.794   |
+| yield_10y           |           -1.757   |             1.147   |
+| yield_2y            |           -0.8623  |             1.697   |
+| fed_funds           |           -0.6362  |             1.613   |
+| curve_10y2y         |           -0.5319  |            -1.478   |
+| unemployment        |            0.2866  |            -1.085   |
+| credit_spread       |           -0.3819  |            -1.064   |
+| vix_log             |            0.7937  |             0.1984  |
+| vol_60d             |            0.4793  |             0.1782  |
+| yield_2y_chg_20d    |           -0.143   |             0.4376  |
+| unemployment_chg_3m |            0.4187  |             0.02824 |
+| vol_20d             |            0.4053  |             0.1604  |
+| fed_funds_chg_20d   |           -0.2643  |             0.4008  |
+| spy_vol_20d         |            0.3837  |             0.04779 |
+| beta_spy            |           -0.07483 |            -0.3474  |
 
 
 ## Extreme values (> 10 train std)
 
-|                   |   share_of_rows |
-|:------------------|----------------:|
-| gap               |       0.001112  |
-| oil_ret_5d        |       0.001011  |
-| rel_sector_ret_1d |       0.0006485 |
-| rel_spy_ret_1d    |       0.0005988 |
-| hl_range          |       0.0005607 |
-| vol_20d           |       0.0004546 |
-| ret_1d            |       0.0004339 |
-| oil_ret_1d        |       0.0004037 |
-| vol_60d           |       0.0003808 |
-| rel_sector_ret_5d |       0.0003753 |
+|                     |   share_of_rows |
+|:--------------------|----------------:|
+| unemployment_chg_3m |       0.0207    |
+| gap                 |       0.001112  |
+| oil_ret_5d          |       0.001011  |
+| rel_sector_ret_1d   |       0.0006485 |
+| rel_spy_ret_1d      |       0.0005988 |
+| hl_range            |       0.0005607 |
+| fed_funds_chg_20d   |       0.000506  |
+| vol_20d             |       0.0004546 |
+| ret_1d              |       0.0004339 |
+| oil_ret_1d          |       0.0004037 |
 
