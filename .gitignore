@@ -21,3 +21,6 @@ runs/
 .vscode/
 .idea/
 .ipynb_checkpoints/
+
+# Generated viewer (2.5 MB, rebuild with `tickercast viewer`)
+reports/prediction_viewer.html

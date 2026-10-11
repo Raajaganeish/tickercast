@@ -1,0 +1,468 @@
+<title>Tickercast Range Viewer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: one working column &mdash; controls, summary strip, two stacked charts sharing a time axis, then detail tables. */
+:root {
+  --bg: #f5f6f8;
+  --surface: #ffffff;
+  --ink: #15171b;
+  --ink-2: #545a65;
+  --ink-3: #868c97;
+  --rule: #e3e6eb;
+  --grid: #eef0f3;
+  --band: #2a78d6;
+  --band-fill: rgba(42, 120, 214, 0.16);
+  --inside: #545a65;
+  --outside: #d63e3d;
+  --outside-soft: rgba(214, 62, 61, 0.10);
+  --good: #12805c;
+  --good-soft: rgba(18, 128, 92, 0.10);
+  --focus: #2a78d6;
+  --font-sans: "IBM Plex Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --step--1: 0.8125rem;
+  --step-0: 0.9375rem;
+  --step-1: 1.125rem;
+  --step-2: 1.5rem;
+  --step-3: 2rem;
+  --radius: 8px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111317; --surface: #191c21; --ink: #f1f2f4; --ink-2: #b4bac4; --ink-3: #7c828c;
+    --rule: #2b2f36; --grid: #22262c; --band: #3987e5; --band-fill: rgba(57, 135, 229, 0.22);
+    --inside: #b4bac4; --outside: #ec6b6a; --outside-soft: rgba(236, 107, 106, 0.14);
+    --good: #3fbf8f; --good-soft: rgba(63, 191, 143, 0.14); --focus: #5a9cf0; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111317; --surface: #191c21; --ink: #f1f2f4; --ink-2: #b4bac4; --ink-3: #7c828c;
+  --rule: #2b2f36; --grid: #22262c; --band: #3987e5; --band-fill: rgba(57, 135, 229, 0.22);
+  --inside: #b4bac4; --outside: #ec6b6a; --outside-soft: rgba(236, 107, 106, 0.14);
+  --good: #3fbf8f; --good-soft: rgba(63, 191, 143, 0.14); --focus: #5a9cf0; color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-sans); font-size: var(--step-0); line-height: 1.5; }
+.wrap { max-width: 1120px; margin: 0 auto; padding-inline: 16px; padding-block: 28px 56px; display: grid; gap: 20px; }
+h1, h2 { text-wrap: balance; margin: 0; }
+h1 { font-size: var(--step-3); font-weight: 600; letter-spacing: -0.01em; line-height: 1.15; }
+h2 { font-size: var(--step-1); font-weight: 600; }
+p { margin: 0; }
+.lede { color: var(--ink-2); max-width: 68ch; }
+.mono, .num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.label { font-size: var(--step--1); color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 500; }
+
+header { display: grid; gap: 8px; }
+
+.controls { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: end; }
+.field { display: grid; gap: 6px; min-width: 0; }
+select {
+  font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--rule);
+  border-radius: 6px; padding: 7px 32px 7px 10px; min-width: 15rem; max-width: 100%;
+}
+.seg { display: inline-flex; flex-wrap: wrap; border: 1px solid var(--rule); border-radius: 6px; overflow: hidden; background: var(--surface); }
+.seg button {
+  font: inherit; font-size: var(--step--1); color: var(--ink-2); background: transparent; border: 0;
+  padding: 8px 12px; cursor: pointer; border-right: 1px solid var(--rule);
+}
+.seg button:last-child { border-right: 0; }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--surface); }
+.seg button:hover:not([aria-pressed="true"]) { background: var(--grid); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+.panel { background: var(--surface); border: 1px solid var(--rule); border-radius: var(--radius); padding: 18px; display: grid; gap: 14px; min-width: 0; }
+.panel-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 8px 16px; }
+.panel-head .sub { color: var(--ink-2); font-size: var(--step--1); }
+
+.stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; background: var(--rule); border: 1px solid var(--rule); border-radius: var(--radius); overflow: hidden; }
+.stat { background: var(--surface); padding: 14px 16px; display: grid; gap: 4px; align-content: start; }
+.stat .v { font-family: var(--font-mono); font-size: var(--step-2); font-variant-numeric: tabular-nums; line-height: 1.2; }
+.stat .n { font-size: var(--step--1); color: var(--ink-2); }
+.chip { display: inline-flex; align-items: center; gap: 6px; font-size: var(--step--1); padding: 1px 8px; border-radius: 999px; font-weight: 500; width: fit-content; }
+.chip.good { color: var(--good); background: var(--good-soft); }
+.chip.bad { color: var(--outside); background: var(--outside-soft); }
+.chip svg { width: 12px; height: 12px; }
+
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: var(--step--1); color: var(--ink-2); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.sw { display: inline-block; flex: none; }
+.sw.band { width: 18px; height: 10px; background: var(--band-fill); border-top: 2px solid var(--band); border-radius: 2px; }
+.sw.mid { width: 18px; height: 2px; background: var(--band); }
+.sw.dot { width: 8px; height: 8px; border-radius: 50%; }
+
+.chart { position: relative; width: 100%; }
+.chart > svg { display: block; width: 100%; height: auto; overflow: visible; }
+.chart text { font-family: var(--font-mono); font-size: 11px; fill: var(--ink-3); }
+.tip {
+  position: absolute; pointer-events: none; background: var(--surface); border: 1px solid var(--rule);
+  border-radius: 6px; padding: 10px 12px; font-size: var(--step--1); box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+  display: grid; gap: 4px; min-width: 190px; z-index: 2;
+}
+.tip .row { display: flex; justify-content: space-between; gap: 16px; }
+.tip .row span:first-child { color: var(--ink-2); }
+
+.slider { display: grid; gap: 6px; }
+.slider input { width: 100%; accent-color: var(--band); }
+.slider .ends { display: flex; justify-content: space-between; font-size: var(--step--1); color: var(--ink-3); }
+
+.grid2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; }
+.tablewrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: var(--step--1); }
+th, td { text-align: right; padding: 7px 8px; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+th:first-child, td:first-child { text-align: left; }
+th { color: var(--ink-3); font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.72rem; }
+td.num { font-family: var(--font-mono); }
+tr.me td { font-weight: 600; }
+.up { color: var(--good); }
+.down { color: var(--outside); }
+
+.howto { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; color: var(--ink-2); font-size: var(--step--1); }
+.howto b { color: var(--ink); font-weight: 600; display: block; margin-bottom: 2px; }
+.foot { color: var(--ink-3); font-size: var(--step--1); max-width: 80ch; }
+
+@media (max-width: 860px) {
+  .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .grid2, .howto { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 420px) {
+  select { min-width: 0; width: 100%; }
+  .field { width: 100%; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .seg button { transition: background-color 120ms ease; }
+}
+</style>
+
+<div class="wrap">
+  <header>
+    <span class="label">Tickercast &middot; test years 2022 &rarr; today</span>
+    <h1>Predicted range vs what really happened</h1>
+    <p class="lede">Each trading day the model gives a range for the next day's change: a <b>low</b> (only a 10% chance the stock falls further), a <b>middle guess</b>, and a <b>high</b> (only a 10% chance it rises more). The dots are what actually happened. A good forecast keeps about 8 in 10 dots inside the band and widens before big moves. None of these days were used to train or tune the models.</p>
+  </header>
+
+  <div class="controls" role="group" aria-label="Chart controls">
+    <div class="field">
+      <label class="label" for="stock">Stock</label>
+      <select id="stock"></select>
+    </div>
+    <div class="field">
+      <span class="label" id="model-label">Model</span>
+      <div class="seg" id="model" role="group" aria-labelledby="model-label"></div>
+    </div>
+    <div class="field">
+      <span class="label" id="period-label">Period</span>
+      <div class="seg" id="period" role="group" aria-labelledby="period-label"></div>
+    </div>
+  </div>
+
+  <section class="stats" id="stats" aria-label="Summary for the visible period"></section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2 id="chart-title">Next-day change</h2>
+      <span class="sub" id="chart-sub"></span>
+    </div>
+    <div class="legend" aria-hidden="true">
+      <span><i class="sw band"></i>Predicted range (low to high)</span>
+      <span><i class="sw mid"></i>Middle guess</span>
+      <span><i class="sw dot" style="background: var(--inside)"></i>Actual, inside range</span>
+      <span><i class="sw dot" style="background: var(--outside)"></i>Actual, outside range</span>
+    </div>
+    <div class="chart" id="chart-main"></div>
+    <div class="chart" id="chart-price"></div>
+    <div class="slider">
+      <label class="label" for="window">Move through time</label>
+      <input type="range" id="window" min="0" max="100" value="100">
+      <div class="ends"><span id="win-start"></span><span id="win-end"></span></div>
+    </div>
+  </section>
+
+  <div class="grid2">
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Biggest surprises</h2>
+        <span class="sub">visible period, furthest outside the range</span>
+      </div>
+      <div class="tablewrap"><table id="misses"></table></div>
+    </section>
+    <section class="panel">
+      <div class="panel-head">
+        <h2>All models, all stocks</h2>
+        <span class="sub" id="overall-sub"></span>
+      </div>
+      <div class="tablewrap"><table id="overall"></table></div>
+      <p class="foot">Inside range should be close to 80%. Penalty combines all three guesses (lower is better). Width vs move: how much wider the range is on days with big moves (0 = not at all).</p>
+    </section>
+  </div>
+
+  <section class="howto">
+    <div><b>Wide band = big move expected</b>The band stretches when a stock has been jumpy or the market is nervous, and shrinks in calm stretches.</div>
+    <div><b>Red dots are the surprises</b>Earnings days and sudden news usually land outside, because they can't be known the day before.</div>
+    <div><b>The middle line hugs zero</b>Direction is close to a coin flip. The useful part of the forecast is the size of the range.</div>
+  </section>
+
+  <p class="foot">Moves are log returns in %, close to close. Each range was made at the previous day's close and is drawn on the day the move happened. Viewer shows 42 well-known S&amp;P 500 stocks; the overall table covers every stock in the test set. Educational project, not investment advice.</p>
+</div>
+
+<script>
+const DATA = /*__DATA__*/null;
+const MODEL_KEYS = Object.keys(DATA.models);
+const PERIODS = [["3M", 63], ["6M", 126], ["1Y", 252], ["2Y", 504], ["All", 99999]];
+const NS = "http://www.w3.org/2000/svg";
+const state = { stock: "AAPL", model: MODEL_KEYS[0], period: 126, end: null };
+try {
+  const saved = JSON.parse(localStorage.getItem("tickercast-viewer") || "{}");
+  if (saved.stock && DATA.stocks[saved.stock]) state.stock = saved.stock;
+  if (saved.model && DATA.models[saved.model]) state.model = saved.model;
+  if (saved.period) state.period = saved.period;
+} catch (e) {}
+
+const $ = (id) => document.getElementById(id);
+const pct = (bp, d = 2) => (bp / 100).toFixed(d) + "%";
+const signed = (bp, d = 2) => (bp > 0 ? "+" : bp < 0 ? "\u2212" : "") + Math.abs(bp / 100).toFixed(d) + "%";
+const fmtDate = (s) => new Date(s + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+const el = (tag, attrs = {}, parent) => {
+  const n = document.createElementNS(NS, tag);
+  for (const k in attrs) n.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(n);
+  return n;
+};
+const save = () => { try { localStorage.setItem("tickercast-viewer", JSON.stringify(state)); } catch (e) {} };
+
+/* controls */
+const sel = $("stock");
+Object.keys(DATA.stocks).sort().forEach((t) => {
+  const o = document.createElement("option");
+  o.value = t; o.textContent = `${t} \u00b7 ${DATA.stocks[t].name}`;
+  sel.appendChild(o);
+});
+sel.value = state.stock;
+sel.addEventListener("change", () => { state.stock = sel.value; state.end = null; save(); render(); });
+
+function segmented(container, items, current, onPick) {
+  container.innerHTML = "";
+  items.forEach(([value, label]) => {
+    const b = document.createElement("button");
+    b.type = "button"; b.textContent = label;
+    b.setAttribute("aria-pressed", String(value === current));
+    b.addEventListener("click", () => { onPick(value); });
+    container.appendChild(b);
+  });
+}
+function drawControls() {
+  segmented($("model"), MODEL_KEYS.map((k) => [k, DATA.models[k]]), state.model, (v) => { state.model = v; save(); render(); });
+  segmented($("period"), PERIODS.map(([l, n]) => [n, l]), state.period, (v) => { state.period = v; save(); render(); });
+}
+
+const slider = $("window");
+slider.addEventListener("input", () => { state.end = Number(slider.value); render(false); });
+
+/* data for the visible window */
+function windowRows() {
+  const s = DATA.stocks[state.stock];
+  const n = s.d.length;
+  const len = Math.min(state.period, n);
+  slider.min = len - 1; slider.max = n - 1;
+  slider.disabled = len >= n;
+  if (state.end == null || state.end > n - 1 || state.end < len - 1) state.end = n - 1;
+  slider.value = state.end;
+  const i0 = state.end - len + 1, i1 = state.end;
+  const [lo, mid, hi] = s[state.model];
+  const rows = [];
+  for (let i = i0; i <= i1; i++) {
+    const a = s.actual[i];
+    rows.push({ i, date: DATA.calendar[s.d[i]], actual: a, low: lo[i], mid: mid[i], high: hi[i], close: s.close[i],
+                status: a > hi[i] ? "above" : a < lo[i] ? "below" : "inside" });
+  }
+  return rows;
+}
+
+/* summary strip */
+const ICON_OK = '<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 6.2l2.3 2.3 4.7-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const ICON_WARN = '<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 2.5v4.2M6 9.2v.1" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
+function drawStats(rows) {
+  const n = rows.length;
+  const inside = rows.filter((r) => r.status === "inside").length / n;
+  const above = rows.filter((r) => r.status === "above").length / n;
+  const below = rows.filter((r) => r.status === "below").length / n;
+  const width = rows.reduce((a, r) => a + (r.high - r.low), 0) / n;
+  const dir = rows.filter((r) => (r.mid > 0) === (r.actual > 0)).length / n;
+  const big = rows.reduce((m, r) => Math.abs(r.actual) > Math.abs(m.actual) ? r : m, rows[0]);
+  const ok = Math.abs(inside - 0.8) <= 0.07;
+  $("stats").innerHTML = `
+    <div class="stat"><span class="label">Inside the range</span><span class="v">${Math.round(inside * 100)}%</span>
+      <span class="chip ${ok ? "good" : "bad"}">${ok ? ICON_OK : ICON_WARN}${ok ? "Close to the 80% target" : inside < 0.8 ? "Ranges too narrow" : "Ranges too wide"}</span></div>
+    <div class="stat"><span class="label">Outside: below / above</span><span class="v">${Math.round(below * 100)}% / ${Math.round(above * 100)}%</span>
+      <span class="n">Target about 10% / 10%</span></div>
+    <div class="stat"><span class="label">Average range width</span><span class="v">${pct(width)}</span>
+      <span class="n">From low to high, per day</span></div>
+    <div class="stat"><span class="label">Biggest move</span><span class="v ${big.actual > 0 ? "up" : "down"}">${signed(big.actual)}</span>
+      <span class="n">${fmtDate(big.date)} \u00b7 direction right ${Math.round(dir * 100)}% of days</span></div>`;
+}
+
+/* charts */
+function niceStep(range, target) {
+  const raw = range / target, p = Math.pow(10, Math.floor(Math.log10(raw)));
+  const m = raw / p;
+  return (m < 1.5 ? 1 : m < 3 ? 2 : m < 7 ? 5 : 10) * p;
+}
+function xTicks(rows, x) {
+  const out = []; let last = "";
+  const months = rows.length > 300 ? 6 : rows.length > 130 ? 2 : 1;
+  rows.forEach((r, k) => {
+    const d = new Date(r.date + "T00:00:00");
+    const key = d.getFullYear() + "-" + d.getMonth();
+    if (key !== last && d.getMonth() % months === 0) {
+      const lab = d.getMonth() === 0 || months >= 6
+        ? d.toLocaleDateString("en-GB", { month: "short", year: "numeric" })
+        : d.toLocaleDateString("en-GB", { month: "short" });
+      out.push([x(k), lab]);
+    }
+    last = key;
+  });
+  return out.filter((t, i, a) => i === 0 || t[0] - a[i - 1][0] > 64);
+}
+
+const tip = document.createElement("div");
+tip.className = "tip"; tip.hidden = true;
+$("chart-main").appendChild(tip);
+
+function drawMain(rows) {
+  const box = $("chart-main");
+  box.querySelectorAll("svg").forEach((s) => s.remove());
+  const W = Math.max(320, box.clientWidth), H = W < 560 ? 260 : 340;
+  const m = { l: 46, r: 12, t: 10, b: 26 };
+  const iw = W - m.l - m.r, ih = H - m.t - m.b;
+  const sorted = rows.map((r) => Math.abs(r.actual)).sort((a, b) => a - b);
+  const p98 = sorted[Math.floor(sorted.length * 0.98)] || 100;
+  let ext = Math.max(p98, ...rows.map((r) => Math.max(r.high, -r.low))) * 1.12;
+  const step = niceStep(ext * 2, 6);
+  ext = Math.ceil(ext / step) * step;
+  const x = (k) => m.l + (rows.length === 1 ? iw / 2 : (k / (rows.length - 1)) * iw);
+  const y = (v) => m.t + ih / 2 - (Math.max(-ext, Math.min(ext, v)) / ext) * (ih / 2);
+
+  const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, role: "img",
+    "aria-label": `${state.stock} next-day change with ${DATA.models[state.model]} predicted range, ${rows[0].date} to ${rows[rows.length - 1].date}` });
+  for (let v = -ext; v <= ext + 1e-9; v += step) {
+    el("line", { x1: m.l, x2: W - m.r, y1: y(v), y2: y(v), stroke: v === 0 ? "var(--ink-3)" : "var(--grid)", "stroke-width": v === 0 ? 1 : 1 }, svg);
+    const t = el("text", { x: m.l - 8, y: y(v) + 4, "text-anchor": "end" }, svg);
+    t.textContent = (v > 0 ? "+" : "") + (v / 100).toFixed(step < 100 ? 1 : 0) + "%";
+  }
+  xTicks(rows, x).forEach(([px, lab]) => {
+    el("line", { x1: px, x2: px, y1: H - m.b, y2: H - m.b + 4, stroke: "var(--ink-3)" }, svg);
+    const t = el("text", { x: px, y: H - 8, "text-anchor": "middle" }, svg); t.textContent = lab;
+  });
+
+  let top = "", bot = "";
+  rows.forEach((r, k) => { top += (k ? "L" : "M") + x(k).toFixed(1) + "," + y(r.high).toFixed(1); });
+  for (let k = rows.length - 1; k >= 0; k--) bot += "L" + x(k).toFixed(1) + "," + y(rows[k].low).toFixed(1);
+  el("path", { d: top + bot + "Z", fill: "var(--band-fill)", stroke: "none" }, svg);
+  el("path", { d: top, fill: "none", stroke: "var(--band)", "stroke-width": 1, "stroke-opacity": 0.55 }, svg);
+  el("path", { d: rows.map((r, k) => (k ? "L" : "M") + x(k).toFixed(1) + "," + y(rows[k].low).toFixed(1)).join(""), fill: "none", stroke: "var(--band)", "stroke-width": 1, "stroke-opacity": 0.55 }, svg);
+  el("path", { d: rows.map((r, k) => (k ? "L" : "M") + x(k).toFixed(1) + "," + y(r.mid).toFixed(1)).join(""), fill: "none", stroke: "var(--band)", "stroke-width": 2, "stroke-linejoin": "round" }, svg);
+
+  const rad = rows.length > 400 ? 2 : rows.length > 150 ? 2.6 : 3.4;
+  rows.forEach((r, k) => {
+    const clipped = Math.abs(r.actual) > ext;
+    const out = r.status !== "inside";
+    if (clipped) {
+      const yy = y(r.actual), dir = r.actual > 0 ? -1 : 1;
+      el("path", { d: `M${x(k) - 4},${yy - dir * 1} L${x(k) + 4},${yy - dir * 1} L${x(k)},${yy + dir * 6} Z`,
+        fill: "var(--outside)", stroke: "var(--surface)", "stroke-width": 1 }, svg).setAttribute("transform", "");
+    } else {
+      el("circle", { cx: x(k), cy: y(r.actual), r: out ? rad + 0.6 : rad, fill: out ? "var(--outside)" : "var(--inside)",
+        "fill-opacity": out ? 1 : 0.75, stroke: "var(--surface)", "stroke-width": out ? 1 : 0.5 }, svg);
+    }
+  });
+
+  const cross = el("line", { y1: m.t, y2: H - m.b, stroke: "var(--ink-3)", "stroke-dasharray": "3 3", visibility: "hidden" }, svg);
+  const ring = el("circle", { r: rad + 3, fill: "none", stroke: "var(--ink)", "stroke-width": 1.5, visibility: "hidden" }, svg);
+  const hit = el("rect", { x: m.l, y: m.t, width: iw, height: ih, fill: "transparent" }, svg);
+  const move = (ev) => {
+    const rect = svg.getBoundingClientRect();
+    const sx = (ev.clientX - rect.left) * (W / rect.width);
+    const k = Math.max(0, Math.min(rows.length - 1, Math.round(((sx - m.l) / iw) * (rows.length - 1))));
+    const r = rows[k];
+    cross.setAttribute("x1", x(k)); cross.setAttribute("x2", x(k)); cross.setAttribute("visibility", "visible");
+    ring.setAttribute("cx", x(k)); ring.setAttribute("cy", y(r.actual)); ring.setAttribute("visibility", "visible");
+    const label = r.status === "inside" ? "Inside range" : r.status === "above" ? "Above high" : "Below low";
+    tip.innerHTML = `<strong>${fmtDate(r.date)}</strong>
+      <div class="row"><span>Actual</span><span class="mono ${r.actual >= 0 ? "up" : "down"}">${signed(r.actual)}</span></div>
+      <div class="row"><span>High</span><span class="mono">${signed(r.high)}</span></div>
+      <div class="row"><span>Middle</span><span class="mono">${signed(r.mid)}</span></div>
+      <div class="row"><span>Low</span><span class="mono">${signed(r.low)}</span></div>
+      <span class="chip ${r.status === "inside" ? "good" : "bad"}">${r.status === "inside" ? ICON_OK : ICON_WARN}${label}</span>`;
+    tip.hidden = false;
+    const px = (x(k) / W) * rect.width, bw = box.clientWidth;
+    tip.style.left = Math.min(Math.max(0, px + 14), bw - tip.offsetWidth) + "px";
+    if (px + 14 + tip.offsetWidth > bw) tip.style.left = Math.max(0, px - tip.offsetWidth - 14) + "px";
+    tip.style.top = "8px";
+  };
+  hit.addEventListener("pointermove", move);
+  hit.addEventListener("pointerdown", move);
+  hit.addEventListener("pointerleave", () => { tip.hidden = true; cross.setAttribute("visibility", "hidden"); ring.setAttribute("visibility", "hidden"); });
+  box.insertBefore(svg, tip);
+}
+
+function drawPrice(rows) {
+  const box = $("chart-price");
+  box.innerHTML = "";
+  const W = Math.max(320, box.clientWidth), H = 120;
+  const m = { l: 46, r: 12, t: 18, b: 22 };
+  const iw = W - m.l - m.r, ih = H - m.t - m.b;
+  const vals = rows.map((r) => r.close);
+  let lo = Math.min(...vals), hi = Math.max(...vals);
+  const step = niceStep(hi - lo || 1, 3);
+  lo = Math.floor(lo / step) * step; hi = Math.ceil(hi / step) * step;
+  const x = (k) => m.l + (rows.length === 1 ? iw / 2 : (k / (rows.length - 1)) * iw);
+  const y = (v) => m.t + ih - ((v - lo) / (hi - lo || 1)) * ih;
+  const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": `${state.stock} closing price` }, box);
+  const cap = el("text", { x: m.l, y: 11 }, svg); cap.textContent = `${state.stock} price ($, adjusted)`;
+  for (let v = lo; v <= hi + 1e-9; v += step) {
+    el("line", { x1: m.l, x2: W - m.r, y1: y(v), y2: y(v), stroke: "var(--grid)" }, svg);
+    const t = el("text", { x: m.l - 8, y: y(v) + 4, "text-anchor": "end" }, svg);
+    t.textContent = v >= 1000 ? (v / 1000).toFixed(1) + "k" : v.toFixed(step < 1 ? 1 : 0);
+  }
+  const d = rows.map((r, k) => (k ? "L" : "M") + x(k).toFixed(1) + "," + y(r.close).toFixed(1)).join("");
+  el("path", { d: d + `L${x(rows.length - 1)},${m.t + ih}L${x(0)},${m.t + ih}Z`, fill: "var(--grid)", stroke: "none" }, svg);
+  el("path", { d, fill: "none", stroke: "var(--ink-2)", "stroke-width": 1.5, "stroke-linejoin": "round" }, svg);
+  const last = rows[rows.length - 1];
+  el("circle", { cx: x(rows.length - 1), cy: y(last.close), r: 3, fill: "var(--ink)" }, svg);
+}
+
+function drawMisses(rows) {
+  const miss = rows.filter((r) => r.status !== "inside")
+    .map((r) => ({ ...r, by: r.status === "above" ? r.actual - r.high : r.low - r.actual }))
+    .sort((a, b) => b.by - a.by).slice(0, 8);
+  const t = $("misses");
+  if (!miss.length) { t.innerHTML = `<tr><td>Every move in this period landed inside the range.</td></tr>`; return; }
+  t.innerHTML = `<thead><tr><th>Day</th><th>Actual</th><th>Predicted range</th><th>Outside by</th></tr></thead><tbody>` +
+    miss.map((r) => `<tr><td>${fmtDate(r.date)}</td><td class="num ${r.actual >= 0 ? "up" : "down"}">${signed(r.actual)}</td>
+      <td class="num">${signed(r.low, 1)} to ${signed(r.high, 1)}</td><td class="num">${pct(r.by)}</td></tr>`).join("") + "</tbody>";
+}
+
+function drawOverall() {
+  $("overall-sub").textContent = `test years, ${DATA.n_all_stocks} stocks`;
+  const rows = MODEL_KEYS.filter((k) => DATA.overall[k]).map((k) => [k, DATA.overall[k]]);
+  $("overall").innerHTML = `<thead><tr><th>Model</th><th>Inside range</th><th>Avg width</th><th>Width vs move</th><th>Penalty</th></tr></thead><tbody>` +
+    rows.map(([k, o]) => `<tr class="${k === state.model ? "me" : ""}"><td>${DATA.models[k]}</td>
+      <td class="num">${(o.coverage * 100).toFixed(1)}%</td><td class="num">${o.avg_width_pct.toFixed(2)}%</td>
+      <td class="num">${o.width_vs_move_corr.toFixed(2)}</td><td class="num">${o.pinball_loss.toFixed(3)}</td></tr>`).join("") + "</tbody>";
+}
+
+function render(redrawControls = true) {
+  if (redrawControls) drawControls();
+  const rows = windowRows();
+  $("chart-title").textContent = `${state.stock}: next-day change`;
+  $("chart-sub").textContent = `${DATA.models[state.model]} \u00b7 ${rows.length} trading days`;
+  $("win-start").textContent = fmtDate(rows[0].date);
+  $("win-end").textContent = fmtDate(rows[rows.length - 1].date);
+  drawStats(rows); drawMain(rows); drawPrice(rows); drawMisses(rows); drawOverall();
+}
+render();
+let rz;
+new ResizeObserver(() => { clearTimeout(rz); rz = setTimeout(() => render(false), 120); }).observe($("chart-main"));
+</script>

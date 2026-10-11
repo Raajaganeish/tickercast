@@ -90,6 +90,12 @@ def cmd_evaluate(cfg, args):
                                               "mid_daily_ic"]].round(4).to_string())
 
 
+def cmd_viewer(cfg, args):
+    from tickercast.viz.viewer import build_viewer
+
+    build_viewer(cfg)
+
+
 def cmd_sample(cfg, args):
     """Export one stock's rows to CSV so they can be opened in Excel / an IDE table viewer."""
     import pandas as pd
@@ -141,6 +147,7 @@ def main(argv=None) -> int:
     sp.set_defaults(fn=cmd_evaluate)
     sp.add_argument("--runs", default="all_vol_scaled,all_raw",
                     help="comma-separated training runs to compare (first = main), e.g. all_vol_scaled,all_raw")
+    sub.add_parser("viewer", help="build reports/prediction_viewer.html (predicted range vs actual)").set_defaults(fn=cmd_viewer)
     sp = sub.add_parser("sample", help="export one stock to data/samples/<TICKER>_<stage>.csv")
     sp.set_defaults(fn=cmd_sample)
     sp.add_argument("--ticker", default="AAPL")

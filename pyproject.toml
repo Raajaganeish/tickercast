@@ -34,5 +34,8 @@ tickercast = "tickercast.cli:main"
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+tickercast = ["viz/*.html"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]

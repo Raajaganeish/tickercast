@@ -67,6 +67,7 @@ Individual steps:
 | `tickercast benchmark` | PatchTST training speed for 4 sizes | `data/results/patchtst_benchmark.csv` |
 | `tickercast train` | Train PatchTST range models (`--features`, `--target-mode`, `--sizes`) | `checkpoints/`, `data/results/` |
 | `tickercast evaluate` | Final comparison on validation + locked test years | `reports/05_patchtst.md` |
+| `tickercast viewer` | Interactive page: predicted range vs actual moves, 42 stocks, test years | `reports/prediction_viewer.html` (open in a browser) |
 
 Add `--limit 20` to `download` for a quick test with 20 stocks.
 
@@ -124,6 +125,7 @@ src/tickercast/
   baselines/             phase 2 baselines
   models/                PatchTST + speed benchmark
   training/              range training loop, quantile loss, final evaluation
+  viz/                   prediction viewer (HTML template + builder)
   cli.py                 `tickercast` command
 notebooks/               exploration notebooks
 tests/                   offline tests on synthetic data
