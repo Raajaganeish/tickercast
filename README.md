@@ -69,6 +69,7 @@ The data files are Parquet (compressed, not human-readable). Three ways to look 
 | Way | How |
 |---|---|
 | **Guided notebook** | Open [`notebooks/01_explore_dataset.ipynb`](notebooks/01_explore_dataset.ipynb): tables and charts from raw prices to the exact 128-day window the model sees |
+| **Column meanings** | [docs/data_dictionary.md](docs/data_dictionary.md): what every column means and how to read its numbers |
 | **Spreadsheet** | `tickercast sample --ticker AAPL --stage features` → `data/samples/AAPL_features.csv` (also `--stage raw` / `dataset`, `--start`, `--end`) |
 | **Python** | `pd.read_parquet("data/interim/features.parquet", filters=[("ticker", "==", "AAPL")])` |
 
@@ -94,6 +95,7 @@ Read in order:
 | [01 Data sources](docs/01_data_sources.md) | Where every number comes from |
 | [02 Universe](docs/02_universe.md) | Which stocks, survivorship bias, liquidity cleaning |
 | [03 Features](docs/03_features.md) | How real-world information becomes numbers (with a real Apple example) |
+| [Data dictionary](docs/data_dictionary.md) | **Every column in plain words**, with a real Apple value and how to read it |
 | [04 Point-in-time](docs/04_point_in_time.md) | The no-peeking rule and how it's enforced |
 | [05 Validation](docs/05_validation.md) | Every check, why it exists, what to do when it fails |
 | [06 Model input](docs/06_model_input.md) | Splits, scaling, windows, and how PatchTST will read them |
