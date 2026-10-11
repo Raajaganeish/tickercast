@@ -6,7 +6,9 @@
       + learned position embedding (which patch)
       + ticker embedding + sector embedding        (same vector added to every patch)
       -> Transformer encoder (pre-norm)            (batch, 16, d)
-      -> flatten -> linear                         (batch,) logit for P(up tomorrow)
+      -> flatten -> linear                         (batch, n_outputs)
+                                                   1 output: logit for P(up tomorrow)
+                                                   3 outputs: raw values for the low/mid/high range
 
 Note: the original PatchTST paper treats each feature as a separate series
 ("channel-independent"). With 66 related features we mix them inside each patch instead,
@@ -34,6 +36,7 @@ class PatchTSTConfig:
     d_ff: int = 256
     dropout: float = 0.2
     use_ticker_embedding: bool = True
+    n_outputs: int = 1             # 1 = one logit (up/down); 3 = low/mid/high range
 
     @property
     def n_patches(self) -> int:
@@ -59,7 +62,7 @@ class PatchTST(nn.Module):
         )
         self.encoder = nn.TransformerEncoder(layer, cfg.n_layers, enable_nested_tensor=False)
         self.norm = nn.LayerNorm(cfg.d_model)
-        self.head = nn.Sequential(nn.Flatten(), nn.Dropout(cfg.dropout), nn.Linear(cfg.n_patches * cfg.d_model, 1))
+        self.head = nn.Sequential(nn.Flatten(), nn.Dropout(cfg.dropout), nn.Linear(cfg.n_patches * cfg.d_model, cfg.n_outputs))
 
     def forward(self, x: torch.Tensor, ticker_id: torch.Tensor, sector_id: torch.Tensor) -> torch.Tensor:
         b = x.shape[0]
@@ -70,7 +73,8 @@ class PatchTST(nn.Module):
             ident = ident + self.ticker_emb(ticker_id)
         h = self.drop(h + ident[:, None, :])
         h = self.norm(self.encoder(h))
-        return self.head(h).squeeze(-1)
+        out = self.head(h)
+        return out.squeeze(-1) if self.cfg.n_outputs == 1 else out
 
 
 def count_parameters(model: nn.Module) -> int:

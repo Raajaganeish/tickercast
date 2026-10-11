@@ -75,6 +75,21 @@ def cmd_benchmark(cfg, args):
     print(res.round(2).to_string())
 
 
+def cmd_train(cfg, args):
+    from tickercast.training.train import TrainConfig, run_training
+
+    tcfg = TrainConfig(sizes=args.sizes.split(","), features=args.features, max_epochs=args.max_epochs,
+                       target_mode=args.target_mode)
+    print(run_training(cfg, tcfg)[["params", "epoch", "val_loss", "coverage", "width_vs_move_corr"]].round(4).to_string())
+
+
+def cmd_evaluate(cfg, args):
+    from tickercast.training.evaluate import run_evaluation
+
+    print(run_evaluation(cfg, args.runs.split(","))[["pinball_loss", "coverage", "avg_width_pct", "width_vs_move_corr",
+                                              "mid_daily_ic"]].round(4).to_string())
+
+
 def cmd_sample(cfg, args):
     """Export one stock's rows to CSV so they can be opened in Excel / an IDE table viewer."""
     import pandas as pd
@@ -115,6 +130,17 @@ def main(argv=None) -> int:
             sp.add_argument("--skip-truncation", action="store_true", help="skip the slower point-in-time test")
     sub.add_parser("baselines", help="train + score baselines on validation years").set_defaults(fn=cmd_baselines)
     sub.add_parser("benchmark", help="measure PatchTST training speed for several sizes").set_defaults(fn=cmd_benchmark)
+    sp = sub.add_parser("train", help="train PatchTST range models (one per size)")
+    sp.set_defaults(fn=cmd_train)
+    sp.add_argument("--sizes", default="small,medium,large,xlarge", help="comma-separated: small,medium,large,xlarge")
+    sp.add_argument("--features", choices=["all", "stock_only"], default="all")
+    sp.add_argument("--max-epochs", type=int, default=10)
+    sp.add_argument("--target-mode", choices=["vol_scaled", "raw"], default="vol_scaled",
+                    help="vol_scaled: forecast in units of each stock's recent volatility (default); raw: in %%")
+    sp = sub.add_parser("evaluate", help="final comparison on validation + locked test years")
+    sp.set_defaults(fn=cmd_evaluate)
+    sp.add_argument("--runs", default="all_vol_scaled,all_raw",
+                    help="comma-separated training runs to compare (first = main), e.g. all_vol_scaled,all_raw")
     sp = sub.add_parser("sample", help="export one stock to data/samples/<TICKER>_<stage>.csv")
     sp.set_defaults(fn=cmd_sample)
     sp.add_argument("--ticker", default="AAPL")

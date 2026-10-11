@@ -28,19 +28,22 @@ def valid_window_ends(df: pd.DataFrame, window: int, target: str, split: str) ->
 class WindowDataset:
     """torch.utils.data.Dataset-compatible (no torch import needed to build it)."""
 
-    def __init__(self, processed_dir: str | Path, split: str, target: str | None = None, window: int | None = None):
+    def __init__(self, processed_dir: str | Path, split: str, target: str | None = None, window: int | None = None,
+                 features: list[str] | None = None):
         processed_dir = Path(processed_dir)
         self.meta = json.loads((processed_dir / "meta.json").read_text())
         df = pd.read_parquet(processed_dir / "dataset.parquet")
         self.target = target or self.meta["default_target"]
         self.window = window or self.meta["window"]
-        self.features = self.meta["features"]
+        self.features = features or self.meta["features"]   # optional subset, e.g. stock-specific only
 
         self.X = df[self.features].to_numpy(dtype=np.float32, copy=True)  # writable, so torch can wrap it
         self.y = df[self.target].to_numpy(dtype=np.float32)
         self.ticker_id = df["ticker_id"].to_numpy(dtype=np.int64)
         self.sector_id = df["sector_id"].to_numpy(dtype=np.int64)
         self.dates = df["date"].to_numpy()
+        # real 20-day volatility on each row (log-return std), floored so calm days don't divide by ~0
+        self.vol = np.maximum(df["vol_20d_raw"].to_numpy(dtype=np.float32), 0.005) if "vol_20d_raw" in df else None
         self.ends = valid_window_ends(df, self.window, self.target, split)
 
     def __len__(self) -> int:

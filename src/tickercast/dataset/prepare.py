@@ -35,6 +35,9 @@ def prepare_dataset(cfg: Config) -> tuple[pd.DataFrame, dict]:
 
     mean = df.loc[train, feats].mean()
     std = df.loc[train, feats].std().replace(0, 1.0)
+    # Keep the stock's real (unscaled, unclipped) 20-day volatility: models that forecast ranges
+    # "in units of recent volatility" need it to convert back to %. Not a model input.
+    df["vol_20d_raw"] = df["vol_20d"].astype("float32")
     df[feats] = ((df[feats] - mean) / std).clip(-CLIP, CLIP).fillna(0.0).astype("float32")
 
     tickers = sorted(df["ticker"].unique())

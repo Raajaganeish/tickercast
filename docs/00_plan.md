@@ -35,10 +35,11 @@ Price, market, sector, calendar and macro features; three validation reports; le
 - These set the score PatchTST must beat.
 - **Result** ([08_baselines.md](08_baselines.md)): with ~500 stocks sharing the same market-wide values each day, models memorized dates when asked "will it go up?". "Will it beat the market?" (`label_outperform_1d`) with stock-specific inputs gives a real signal: daily IC ≈ 0.027. PatchTST trains far faster than estimated (5M params: 3.6 min per pass), so Phase 3 trains four sizes and keeps the best on validation.
 
-### Phase 3: PatchTST training
-- Plain PyTorch implementation, training loop with early stopping on validation loss.
-- Evaluate: accuracy vs baselines, ROC-AUC, per-year results, simple backtest with costs.
-- Experiment: 500k vs 5M vs 20M parameters to see overfitting.
+### Phase 3: PatchTST training ✅
+- Task changed (user decision): forecast tomorrow's **range** (low / mid / high) instead of up/down.
+- Result ([09_training.md](09_training.md)): best = small model (0.12M params), 24 stock-specific inputs,
+  range in units of recent volatility. Test 2022+: beats fixed and volatility-band rules, best calibration
+  (80.7%), slightly behind LightGBM on today's row. Bigger models (up to 5M) memorized faster.
 
 ### Phase 4: Richer data
 See [07_future_data.md](07_future_data.md): fundamentals, 8-K events, news sentiment.
