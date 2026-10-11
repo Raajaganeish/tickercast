@@ -24,7 +24,7 @@ dependencies = [
 
 [project.optional-dependencies]
 model = ["torch>=2.3"]
-dev = ["pytest>=8"]
+dev = ["pytest>=8", "jupyter>=1.0", "ipykernel>=6"]
 
 [project.scripts]
 tickercast = "tickercast.cli:main"

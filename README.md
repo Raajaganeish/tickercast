@@ -62,6 +62,16 @@ Individual steps:
 
 Add `--limit 20` to `download` for a quick test with 20 stocks.
 
+## Viewing the data
+
+The data files are Parquet (compressed, not human-readable). Three ways to look at them:
+
+| Way | How |
+|---|---|
+| **Guided notebook** | Open [`notebooks/01_explore_dataset.ipynb`](notebooks/01_explore_dataset.ipynb): tables and charts from raw prices to the exact 128-day window the model sees |
+| **Spreadsheet** | `tickercast sample --ticker AAPL --stage features` → `data/samples/AAPL_features.csv` (also `--stage raw` / `dataset`, `--start`, `--end`) |
+| **Python** | `pd.read_parquet("data/interim/features.parquet", filters=[("ticker", "==", "AAPL")])` |
+
 ## Using the dataset in PyTorch
 
 ```python
@@ -99,6 +109,7 @@ src/tickercast/
   validation/            checks + Markdown reports
   dataset/               step 3: splits, scaling, PyTorch windows
   cli.py                 `tickercast` command
+notebooks/               exploration notebooks
 tests/                   offline tests on synthetic data
 docs/                    documentation
 reports/                 latest validation reports (committed so the team can see them)
