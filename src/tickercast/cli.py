@@ -57,6 +57,24 @@ def cmd_dataset(cfg, args):
     return check_dataset(cfg, df, meta).n_fail
 
 
+def cmd_baselines(cfg, args):
+    from tickercast.baselines.run import run_baselines
+
+    for target, res in run_baselines(cfg).items():
+        print(f"\n{target}")
+        print(res[["accuracy", "train_auc", "auc", "daily_ic", "top_minus_bottom", "train_seconds"]].round(4).to_string())
+
+
+def cmd_benchmark(cfg, args):
+    from tickercast.models.benchmark import run_benchmark
+
+    res = run_benchmark(cfg)
+    out = cfg.path("raw").parent / "results"
+    out.mkdir(exist_ok=True)
+    res.to_csv(out / "patchtst_benchmark.csv")
+    print(res.round(2).to_string())
+
+
 def cmd_sample(cfg, args):
     """Export one stock's rows to CSV so they can be opened in Excel / an IDE table viewer."""
     import pandas as pd
@@ -95,6 +113,8 @@ def main(argv=None) -> int:
             sp.add_argument("--limit", type=int, default=0, help="only download the first N tickers (quick test)")
         if name in ("validate-features", "all"):
             sp.add_argument("--skip-truncation", action="store_true", help="skip the slower point-in-time test")
+    sub.add_parser("baselines", help="train + score baselines on validation years").set_defaults(fn=cmd_baselines)
+    sub.add_parser("benchmark", help="measure PatchTST training speed for several sizes").set_defaults(fn=cmd_benchmark)
     sp = sub.add_parser("sample", help="export one stock to data/samples/<TICKER>_<stage>.csv")
     sp.set_defaults(fn=cmd_sample)
     sp.add_argument("--ticker", default="AAPL")

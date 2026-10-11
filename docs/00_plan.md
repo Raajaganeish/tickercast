@@ -29,10 +29,11 @@ next-day direction better than "always up" or "same as today"?*
 ### Phase 1: Dataset ✅
 Price, market, sector, calendar and macro features; three validation reports; leakage tests.
 
-### Phase 2: Model check + baselines (next)
+### Phase 2: Model check + baselines ✅
 - Re-check PatchTST vs alternatives (LSTM, TFT, LightGBM) with the real dataset size.
 - Baselines: "always up", "same direction as today", logistic regression, LightGBM.
 - These set the score PatchTST must beat.
+- **Result** ([08_baselines.md](08_baselines.md)): with ~500 stocks sharing the same market-wide values each day, models memorized dates when asked "will it go up?". "Will it beat the market?" (`label_outperform_1d`) with stock-specific inputs gives a real signal: daily IC ≈ 0.027. PatchTST trains far faster than estimated (5M params: 3.6 min per pass), so Phase 3 trains four sizes and keeps the best on validation.
 
 ### Phase 3: PatchTST training
 - Plain PyTorch implementation, training loop with early stopping on validation loss.

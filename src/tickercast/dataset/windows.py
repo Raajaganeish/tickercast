@@ -50,3 +50,9 @@ class WindowDataset:
         t = self.ends[i]
         x = self.X[t - self.window + 1 : t + 1]
         return x, self.y[t], self.ticker_id[t], self.sector_id[t]
+
+    def batch(self, idx: np.ndarray):
+        """Many samples at once (fast path for training loops): x has shape (len(idx), window, n_features)."""
+        t = self.ends[idx]
+        rows = t[:, None] + np.arange(-self.window + 1, 1)[None, :]
+        return self.X[rows], self.y[t], self.ticker_id[t], self.sector_id[t]

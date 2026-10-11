@@ -12,9 +12,11 @@ model, test it honestly, and measure whether it beats simple baselines.
 | Phase | What | Status |
 |---|---|---|
 | 1 | **Dataset**: prices, market, sector, calendar, macro (FRED) → validated, model-ready | ✅ Done |
-| 2 | Model choice review + baselines (naive, LightGBM) | ⏭️ Next |
-| 3 | PatchTST training (~5M params, 45–60 min on M-series Mac) | Planned |
+| 2 | Baselines + model check: rules, logistic regression, LightGBM, PatchTST speed test | ✅ Done |
+| 3 | PatchTST training: 4 sizes (0.1M–5M params) in ~60 min, best kept by validation | ⏭️ Next |
 | 4 | Extra data: fundamentals (SEC EDGAR), company events (8-K), news sentiment (FinBERT) | Planned |
+
+**Phase 2 finding:** "will it go up?" mostly means guessing the whole market (models memorized dates); "will it **beat the market**?" shows a real, small stock-picking signal (daily IC ≈ 0.027–0.029 on 2020–21). See [docs/08_baselines.md](docs/08_baselines.md).
 
 Current dataset: **2.36M rows** (499 stocks × ~20 years) · **66 features** (incl. FRED macro) · **0 failed validation checks**.
 
@@ -59,6 +61,8 @@ Individual steps:
 | `tickercast features` | Builds the feature table | `data/interim/features.parquet` |
 | `tickercast validate-features` | Quality + leakage checks | `reports/02_feature_validation.md` |
 | `tickercast dataset` | Split, scale, window, check | `data/processed/` + `reports/03_dataset_validation.md` |
+| `tickercast baselines` | Train + score baselines on 2020–21 | `reports/04_baselines.md` |
+| `tickercast benchmark` | PatchTST training speed for 4 sizes | `data/results/patchtst_benchmark.csv` |
 
 Add `--limit 20` to `download` for a quick test with 20 stocks.
 
@@ -100,6 +104,7 @@ Read in order:
 | [05 Validation](docs/05_validation.md) | Every check, why it exists, what to do when it fails |
 | [06 Model input](docs/06_model_input.md) | Splits, scaling, windows, and how PatchTST will read them |
 | [07 Future data](docs/07_future_data.md) | Plan for fundamentals, events, news sentiment |
+| [08 Baselines](docs/08_baselines.md) | The scores to beat, the date-memorization trap, and the model size check |
 
 ## Repository layout
 
@@ -110,6 +115,9 @@ src/tickercast/
   features/              step 2: feature engineering + targets
   validation/            checks + Markdown reports
   dataset/               step 3: splits, scaling, PyTorch windows
+  evaluation/            shared scoring (accuracy, AUC, daily IC, top-minus-bottom)
+  baselines/             phase 2 baselines
+  models/                PatchTST + speed benchmark
   cli.py                 `tickercast` command
 notebooks/               exploration notebooks
 tests/                   offline tests on synthetic data
