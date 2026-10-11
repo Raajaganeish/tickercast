@@ -1,0 +1,70 @@
+# tickercast data configuration
+# Every pipeline step reads this file. Change values here, not in code.
+
+dates:
+  start: "2005-01-01"
+  end: null            # null = up to today
+
+universe:
+  source: wikipedia_sp500   # current S&P 500 members (see docs/02_universe.md for survivorship bias)
+  extra_tickers: []         # add tickers here to force-include them
+  min_history_days: 252     # tickers with less history are dropped from training
+  min_dollar_volume: 1000000  # trim early history traded below $1M/day (OTC / pre-listing data)
+
+market:
+  # ticker -> short feature name. All downloaded from Yahoo Finance.
+  benchmarks:
+    SPY: spy        # whole US market
+    QQQ: qqq        # Nasdaq-100 (large tech)
+    "^VIX": vix     # fear index
+    TLT: tlt        # long-term US Treasury bonds (safe haven)
+    GLD: gld        # gold (safe haven)
+    USO: oil        # crude oil
+    UUP: usd        # US dollar index
+    SOXX: semis     # semiconductors
+    XLK: tech       # technology sector
+  # Per-stock sector returns are computed from our own universe (average of all
+  # stocks in the same GICS sector), not from sector ETFs: XLRE and XLC only start
+  # in 2015/2018, which would leave gaps. See docs/03_features.md.
+
+macro:
+  # FRED series. Needs FRED_API_KEY in .env; skipped gracefully if missing.
+  # kind=daily  -> value applies from the NEXT trading day (publication lag)
+  # kind=release -> uses the official first-release date from ALFRED (no revisions, no peeking)
+  series:
+    DGS10:  {name: yield_10y,  kind: daily}
+    DGS2:   {name: yield_2y,   kind: daily}
+    T10Y2Y: {name: curve_10y2y, kind: daily}
+    BAMLH0A0HYM2: {name: hy_spread, kind: daily}
+    DFF:    {name: fed_funds,  kind: daily}
+    CPIAUCSL: {name: cpi,      kind: release}
+    UNRATE: {name: unemployment, kind: release}
+
+features:
+  return_windows: [1, 5, 20, 60]
+  vol_windows: [20, 60]
+  volume_window: 20
+  rsi_window: 14
+  ma_windows: [50, 200]
+  beta_window: 60
+  warmup_days: 200       # first N rows of each stock are dropped (long windows not filled yet)
+
+targets:
+  horizons: [1, 5]       # trading days ahead
+
+splits:
+  # Split by the date of the row (features known at that date's close).
+  train_end: "2019-12-31"
+  val_end: "2021-12-31"
+  # everything after val_end is the test set
+  embargo_days: 5        # rows dropped at each boundary so targets never cross splits
+
+dataset:
+  window: 128            # days of history the model sees
+  target: label_up_1d    # which column the model predicts
+
+paths:
+  raw: data/raw
+  interim: data/interim
+  processed: data/processed
+  reports: reports
